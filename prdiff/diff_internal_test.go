@@ -3,6 +3,7 @@ package prdiff
 import (
 	"context"
 	"errors"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -88,5 +89,51 @@ func TestClient_GetDiff(t *testing.T) {
 				t.Errorf("error %q does not contain %q", err.Error(), tc.wantErrSub)
 			}
 		})
+	}
+}
+
+func TestClient_gitFallback_mkghtagPR(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("skip network test in -short mode")
+	}
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skipf("git not available: %v", err)
+	}
+
+	const (
+		baseURL   = "https://github.com/suzuki-shunsuke/mkghtag.git"
+		headURL   = "https://github.com/ponkio-o/mkghtag.git"
+		baseSHA   = "bad96f14de65e0020251d2011221bbce403b2561"
+		headSHA   = "6f1db720d939a40b54c472a67cc722edf80d64af"
+		mergeBase = baseSHA
+	)
+
+	pr := &github.PullRequest{
+		Base: &github.PullRequestBranch{
+			SHA:  github.Ptr(baseSHA),
+			Repo: &github.Repository{CloneURL: github.Ptr(baseURL)},
+		},
+		Head: &github.PullRequestBranch{
+			SHA:  github.Ptr(headSHA),
+			Repo: &github.Repository{CloneURL: github.Ptr(headURL)},
+		},
+	}
+	cmpResp := &github.CommitsComparison{
+		MergeBaseCommit: &github.RepositoryCommit{SHA: github.Ptr(mergeBase)},
+	}
+
+	c := &Client{
+		pr:   &fakePRs{pr: pr},
+		repo: &fakeRepos{cmp: cmpResp},
+	}
+	diff, err := c.gitFallback(t.Context(), "suzuki-shunsuke", "mkghtag", 607)
+	if err != nil {
+		t.Fatalf("gitFallback: %v", err)
+	}
+	for _, want := range []string{"diff --git", "pkg/github/github.go"} {
+		if !strings.Contains(diff, want) {
+			t.Errorf("diff does not contain %q", want)
+		}
 	}
 }
