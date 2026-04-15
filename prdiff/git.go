@@ -15,7 +15,6 @@ func (c *Client) gitFallback(ctx context.Context, owner, repo string, number int
 	baseSHA := pr.GetBase().GetSHA()
 	headSHA := pr.GetHead().GetSHA()
 	baseURL := pr.GetBase().GetRepo().GetCloneURL()
-	headURL := pr.GetHead().GetRepo().GetCloneURL()
 
 	cmp, _, err := c.repo.CompareCommits(ctx, owner, repo, baseSHA, headSHA, nil)
 	if err != nil {
@@ -29,10 +28,12 @@ func (c *Client) gitFallback(ctx context.Context, owner, repo string, number int
 	}
 	defer cleanup()
 
+	// Always fetch through the base repo URL; GitHub's fork network lets the base
+	// repo serve any SHA in the network, so this still works after the head fork
+	// is deleted.
 	for _, args := range [][]string{
-		{"fetch", "--depth", "1", baseURL, baseSHA},
-		{"fetch", "--depth", "1", headURL, headSHA},
 		{"fetch", "--depth", "1", baseURL, mergeBase},
+		{"fetch", "--depth", "1", baseURL, headSHA},
 	} {
 		if err := runGit(ctx, dir, args...); err != nil {
 			return "", err
@@ -40,7 +41,10 @@ func (c *Client) gitFallback(ctx context.Context, owner, repo string, number int
 	}
 
 	var stdout bytes.Buffer
-	cmd := command(ctx, "git", "-C", dir, "diff", baseSHA+"..."+headSHA)
+	// Use the explicit merge-base instead of `base...head` (3-dot) because the
+	// shallow fetches don't have enough history for git to compute merge-base
+	// on its own.
+	cmd := command(ctx, "git", "-C", dir, "diff", mergeBase, headSHA)
 	cmd.Stdout = &stdout
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
