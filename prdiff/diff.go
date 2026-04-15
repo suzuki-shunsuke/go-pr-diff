@@ -2,41 +2,23 @@ package prdiff
 
 import (
 	"context"
-	"net/http"
+	"errors"
+	"fmt"
 
 	"github.com/google/go-github/v84/github"
 )
 
-func NewClient(hc *http.Client, baseURL string) (*Client, error) {
-	gh := github.NewClient(hc)
-	if baseURL != "" {
-		g, err := gh.WithEnterpriseURLs(baseURL, "")
-		if err != nil {
-			return nil, err
-		}
-		gh = g
+func (c *Client) GetDiff(ctx context.Context, owner, repo string, number int) (string, error) {
+	diff, _, err := c.pr.GetRaw(ctx, owner, repo, number, github.RawOptions{
+		Type: github.Diff,
+	})
+	if err == nil {
+		return diff, nil
 	}
-	return &Client{
-		pr:   gh.PullRequests,
-		repo: gh.Repositories,
-	}, nil
-}
-
-type reposService interface {
-	CompareCommits(ctx context.Context, owner, repo, base, head string, opts *github.ListOptions) (*github.CommitsComparison, *github.Response, error)
-}
-
-type prsService interface {
-	GetRaw(ctx context.Context, owner, repo string, number int, opts github.RawOptions) (string, *github.Response, error)
-	Get(ctx context.Context, owner, repo string, number int) (*github.PullRequest, *github.Response, error)
-}
-
-type Client struct {
-	pr   prsService
-	repo reposService
-}
-
-func GetDiff(ctx context.Context, hc *http.Client, owner, repo string, number int) (string, error) {
-
-	return "", nil
+	apiErr := fmt.Errorf("get diff via GitHub API: %w", err)
+	diff, fbErr := c.gitFallback(ctx, owner, repo, number)
+	if fbErr != nil {
+		return "", errors.Join(apiErr, fmt.Errorf("get diff via git fallback: %w", fbErr))
+	}
+	return diff, nil
 }
