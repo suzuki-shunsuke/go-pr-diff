@@ -8,6 +8,10 @@ import (
 	"github.com/google/go-github/v84/github"
 )
 
+// GetDiff returns the diff of a pull request.
+// GetDiff first tries to get the diff via the GitHub API, and falls back to git command if it fails.
+// If the current directory is a git repository, the pull request base head SHA and merge-base SHA are fetched via git command in the current repository,
+// meaning the current repository may be polluted.
 func (c *Client) GetDiff(ctx context.Context, owner, repo string, number int) (string, error) {
 	diff, _, err := c.pr.GetRaw(ctx, owner, repo, number, github.RawOptions{
 		Type: github.Diff,

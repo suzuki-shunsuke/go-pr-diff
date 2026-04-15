@@ -8,11 +8,12 @@ import (
 	"github.com/suzuki-shunsuke/go-pr-diff/prdiff"
 )
 
-func ExampleClient_GetDiff() {
+func Example() {
 	c, err := prdiff.NewClient(nil, "")
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Get diff of https://github.com/suzuki-shunsuke/mkghtag/pull/1080
 	diff, err := c.GetDiff(context.Background(), "suzuki-shunsuke", "mkghtag", 1080)
 	if err != nil {
 		log.Fatal(err)
