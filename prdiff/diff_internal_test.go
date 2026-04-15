@@ -3,6 +3,7 @@ package prdiff
 import (
 	"context"
 	"errors"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -127,13 +128,16 @@ func TestClient_gitFallback_mkghtagPR(t *testing.T) {
 		pr:   &fakePRs{pr: pr},
 		repo: &fakeRepos{cmp: cmpResp},
 	}
-	diff, err := c.gitFallback(t.Context(), "suzuki-shunsuke", "mkghtag", 607)
+	// https://github.com/suzuki-shunsuke/mkghtag/pull/607
+	got, err := c.gitFallback(t.Context(), "suzuki-shunsuke", "mkghtag", 607)
 	if err != nil {
 		t.Fatalf("gitFallback: %v", err)
 	}
-	for _, want := range []string{"diff --git", "pkg/github/github.go"} {
-		if !strings.Contains(diff, want) {
-			t.Errorf("diff does not contain %q", want)
-		}
+	want, err := os.ReadFile("testdata/diff_607_git.txt")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+	if d := cmp.Diff(string(want), got); d != "" {
+		t.Errorf("diff mismatch (-want +got):\n%s", d)
 	}
 }

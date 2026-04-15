@@ -3,9 +3,9 @@ package prdiff_test
 import (
 	"net/http"
 	"os"
-	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/suzuki-shunsuke/go-pr-diff/prdiff"
 )
 
@@ -20,7 +20,7 @@ func (t *authTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	return t.base.RoundTrip(r2) //nolint:wrapcheck
 }
 
-func TestClient_GetDiff_aquaRegistryPR(t *testing.T) {
+func TestClient_GetDiff_mkghtagPR(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("skip network test in -short mode")
@@ -36,19 +36,16 @@ func TestClient_GetDiff_aquaRegistryPR(t *testing.T) {
 		t.Fatalf("NewClient: %v", err)
 	}
 
-	diff, err := c.GetDiff(t.Context(), "aquaproj", "aqua-registry", 51977)
+	// https://github.com/suzuki-shunsuke/mkghtag/pull/607
+	got, err := c.GetDiff(t.Context(), "suzuki-shunsuke", "mkghtag", 607)
 	if err != nil {
 		t.Fatalf("GetDiff: %v", err)
 	}
-	if diff == "" {
-		t.Fatal("got empty diff")
+	want, err := os.ReadFile("testdata/diff_607_api.txt")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
 	}
-	for _, want := range []string{
-		"diff --git",
-		"pkgs/trzsz/trzsz-go",
-	} {
-		if !strings.Contains(diff, want) {
-			t.Errorf("diff does not contain %q", want)
-		}
+	if d := cmp.Diff(string(want), got); d != "" {
+		t.Errorf("diff mismatch (-want +got):\n%s", d)
 	}
 }
