@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/go-github/v86/github"
+	"github.com/google/go-github/v87/github"
 )
 
 // Client is a client to get the diff of a pull request.
@@ -18,13 +18,16 @@ type Client struct {
 // If baseURL is empty, github.com is used.
 // hc is used to call GitHub API using google/go-github.
 func NewClient(hc *http.Client, baseURL string) (*Client, error) {
-	gh := github.NewClient(hc)
+	var opts []github.ClientOptionsFunc
+	if hc != nil {
+		opts = append(opts, github.WithHTTPClient(hc))
+	}
 	if baseURL != "" {
-		g, err := gh.WithEnterpriseURLs(baseURL, "")
-		if err != nil {
-			return nil, fmt.Errorf("set enterprise URL: %w", err)
-		}
-		gh = g
+		opts = append(opts, github.WithEnterpriseURLs(baseURL, baseURL))
+	}
+	gh, err := github.NewClient(opts...)
+	if err != nil {
+		return nil, fmt.Errorf("create a GitHub client: %w", err)
 	}
 	return &Client{
 		pr:   gh.PullRequests,
