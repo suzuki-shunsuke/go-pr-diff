@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/go-github/v87/github"
+	"github.com/google/go-github/v88/github"
 )
 
 // GetDiff returns the diff of a pull request.
