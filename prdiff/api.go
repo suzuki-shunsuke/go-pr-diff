@@ -3,7 +3,7 @@ package prdiff
 import (
 	"context"
 
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v90/github"
 )
 
 type reposService interface {
