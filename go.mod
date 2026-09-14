@@ -1,10 +1,10 @@
 module github.com/suzuki-shunsuke/go-pr-diff
 
-go 1.25.9
+go 1.26.0
 
 require (
 	github.com/google/go-cmp v0.7.0
-	github.com/google/go-github/v90 v90.0.0
+	github.com/google/go-github/v91 v91.0.0
 )
 
 require github.com/google/go-querystring v1.2.0 // indirect
