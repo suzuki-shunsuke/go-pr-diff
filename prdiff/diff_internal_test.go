@@ -102,7 +102,8 @@ func TestClient_gitFallback_mkghtagPR(t *testing.T) {
 		t.Skipf("git not available: %v", err)
 	}
 
-	const (
+	// var rather than const so that the fields below can take their addresses.
+	var (
 		baseURL   = "https://github.com/suzuki-shunsuke/mkghtag.git"
 		headURL   = "https://github.com/ponkio-o/mkghtag.git"
 		baseSHA   = "bad96f14de65e0020251d2011221bbce403b2561"
@@ -112,16 +113,16 @@ func TestClient_gitFallback_mkghtagPR(t *testing.T) {
 
 	pr := &github.PullRequest{
 		Base: &github.PullRequestBranch{
-			SHA:  github.Ptr(baseSHA),
-			Repo: &github.Repository{CloneURL: github.Ptr(baseURL)},
+			SHA:  &baseSHA,
+			Repo: &github.Repository{CloneURL: &baseURL},
 		},
 		Head: &github.PullRequestBranch{
-			SHA:  github.Ptr(headSHA),
-			Repo: &github.Repository{CloneURL: github.Ptr(headURL)},
+			SHA:  &headSHA,
+			Repo: &github.Repository{CloneURL: &headURL},
 		},
 	}
 	cmpResp := &github.CommitsComparison{
-		MergeBaseCommit: &github.RepositoryCommit{SHA: github.Ptr(mergeBase)},
+		MergeBaseCommit: &github.RepositoryCommit{SHA: &mergeBase},
 	}
 
 	c := &Client{
